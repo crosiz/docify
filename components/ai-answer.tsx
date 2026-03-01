@@ -70,7 +70,7 @@ export function AIAnswer({ query, answer, sources, confidence, isLoading }: AIAn
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="bg-background/50 rounded-lg p-4 border border-accent/10 prose prose-slate dark:prose-invert max-w-full break-words overflow-x-auto overflow-y-auto max-h-[400px] scrollbar-thin scrollbar-thumb-accent/20 scrollbar-track-transparent prose-sm sm:prose-base text-card-foreground">
+        <div className="bg-background/50 rounded-lg p-4 border border-accent/10 prose prose-slate dark:prose-invert max-w-full break-words text-slate-800 dark:text-slate-200 prose-p:text-slate-800 dark:prose-p:text-slate-200 prose-headings:text-slate-900 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-slate-100 overflow-x-auto overflow-y-auto max-h-[400px] scrollbar-thin scrollbar-thumb-accent/20 scrollbar-track-transparent prose-sm sm:prose-base">
           <TypingEffect content={answer} speed={10} />
         </div>
 

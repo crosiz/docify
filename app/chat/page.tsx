@@ -181,14 +181,14 @@ export default function ChatPage() {
                                             <div className={`rounded-2xl px-5 py-3.5 shadow-sm text-sm leading-relaxed \${
                         isUser 
                           ? "bg-primary text-primary-foreground rounded-tr-sm" 
-                          : "bg-card border border-border/50 text-card-foreground rounded-tl-sm"
+                          : "bg-card border border-border/50 text-slate-800 dark:text-slate-200 rounded-tl-sm"
                       }`}>
                                                 {isUser ? (
                                                     <div className="whitespace-pre-wrap break-words overflow-hidden">
                                                         {message.content}
                                                     </div>
                                                 ) : (
-                                                    <article className="prose prose-sm dark:prose-invert max-w-full break-words overflow-x-auto overflow-y-auto max-h-[500px] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent prose-p:leading-relaxed prose-pre:bg-muted/50 prose-pre:border prose-pre:border-border prose-pre:max-w-full">
+                                                    <article className="prose prose-sm dark:prose-invert max-w-full break-words text-slate-800 dark:text-slate-200 prose-p:text-slate-800 dark:prose-p:text-slate-200 prose-headings:text-slate-900 dark:prose-headings:text-slate-100 prose-strong:text-slate-900 dark:prose-strong:text-slate-100 overflow-x-auto overflow-y-auto max-h-[500px] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent prose-p:leading-relaxed prose-pre:bg-muted/50 prose-pre:border prose-pre:border-border prose-pre:max-w-full">
                                                         <TypingEffect content={message.content} speed={10} />
                                                     </article>
                                                 )}
@@ -251,7 +251,7 @@ export default function ChatPage() {
 
                             <textarea
                                 placeholder="Message Docify AI..."
-                                className="flex max-h-32 w-full resize-none bg-transparent py-3 px-1 text-sm outline-none placeholder:text-muted-foreground min-h-[44px] scrollbar-thin scrollbar-thumb-rounded-full"
+                                className="flex max-h-32 w-full resize-none bg-transparent py-3 px-1 text-sm outline-none placeholder:text-muted-foreground min-h-[44px] scrollbar-thin scrollbar-thumb-rounded-full text-slate-900 dark:text-slate-100"
                                 rows={1}
                                 value={input}
                                 onChange={(e) => {
