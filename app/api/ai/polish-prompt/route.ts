@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
     try {
-        const apiKey = request.headers.get("x-openai-key") || process.env.OPENAI_API_KEY
+        const apiKey = request.headers.get("x-openai-key")
         if (!apiKey) {
             return NextResponse.json({ error: "OpenAI API key is missing" }, { status: 503 })
         }

@@ -19,7 +19,7 @@ export async function searchDocuments(
 ): Promise<SearchResult[]> {
   if (!userId) return []
 
-  const openaiKey = apiKey || process.env.OPENAI_API_KEY
+  const openaiKey = apiKey
   const embeddings = await db.embedding.findMany({
     where: { document: { userId } },
     include: { document: true },

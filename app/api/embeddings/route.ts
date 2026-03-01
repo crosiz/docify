@@ -1,17 +1,22 @@
 import { type NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
 export async function POST(request: NextRequest) {
   try {
     const { text, documentId, documentName } = await request.json()
+    const apiKey = request.headers.get("x-openai-key")
+
+    if (!apiKey) {
+      return NextResponse.json({ error: "OpenAI API key is missing" }, { status: 401 })
+    }
 
     if (!text) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 })
     }
+
+    const openai = new OpenAI({
+      apiKey: apiKey,
+    })
 
     // Generate embeddings using OpenAI
     const response = await openai.embeddings.create({

@@ -58,26 +58,26 @@ export async function POST(request: NextRequest) {
     let confidence: number
 
     try {
-      const apiKey = request.headers.get("x-openai-key") || process.env.OPENAI_API_KEY
+      if (!apiKey) {
+        throw new Error("OPENAI API KEY MISSING")
+      }
 
-      // Only try OpenAI if API key is available
-      if (apiKey) {
-        const OpenAI = (await import("openai")).default
-        const openai = new OpenAI({
-          apiKey: apiKey,
-        })
+      const OpenAI = (await import("openai")).default
+      const openai = new OpenAI({
+        apiKey: apiKey,
+      })
 
-        // Prepare context from relevant documents
-        const context = relevantDocs
-          .map((doc: any, index: number) => `Document ${index + 1} (${doc.documentName}):\n${doc.text}`)
-          .join("\n\n")
+      // Prepare context from relevant documents
+      const context = relevantDocs
+        .map((doc: any, index: number) => `Document ${index + 1} (${doc.documentName}):\n${doc.text}`)
+        .join("\n\n")
 
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: `You are Docify, an AI assistant that helps employees find information from internal company documents. 
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are Docify, an AI assistant that helps employees find information from internal company documents. 
 
 Instructions:
 - Provide concise, accurate answers based on the provided document context
@@ -86,29 +86,25 @@ Instructions:
 - Keep answers professional and helpful
 - If multiple documents contain relevant info, synthesize the information
 - For policy questions, be specific about requirements and procedures`,
-            },
-            {
-              role: "user",
-              content: `Question: ${query}
+          },
+          {
+            role: "user",
+            content: `Question: ${query}
 
 Context from company documents:
 ${context}
 
 Please provide a concise answer based on the available information.`,
-            },
-          ],
-          temperature: 0.3,
-          max_tokens: 500,
-        })
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 500,
+      })
 
-        aiAnswer = completion.choices[0].message.content || "I couldn't generate a response."
-        confidence = relevantDocs.length > 0 ? Math.max(...relevantDocs.map((d: any) => d.relevanceScore)) : 50
-        console.log("[v0] OpenAI answer generated successfully")
-      } else {
-        throw new Error("OpenAI API key not available")
-      }
+      aiAnswer = completion.choices[0].message.content || "I couldn't generate a response."
+      confidence = relevantDocs.length > 0 ? Math.max(...relevantDocs.map((d: any) => d.relevanceScore)) : 50
     } catch (openaiError) {
-      console.log("[v0] OpenAI not available, using fallback response")
+      console.error("[v0] OpenAI generating failed, using fallback.", openaiError)
       aiAnswer = generateFallbackAnswer(query, relevantDocs)
       confidence = relevantDocs.length > 0 ? Math.max(...relevantDocs.map((d: any) => d.relevanceScore)) : 30
     }

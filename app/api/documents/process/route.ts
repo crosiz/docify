@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File is empty" }, { status: 400 })
     }
 
-    const openaiKey = request.headers.get("x-openai-key") || process.env.OPENAI_API_KEY
+    const openaiKey = request.headers.get("x-openai-key")
     if (!openaiKey) {
       return NextResponse.json(
         { error: "OPENAI_API_KEY is not configured. Add it in settings to process documents." },
