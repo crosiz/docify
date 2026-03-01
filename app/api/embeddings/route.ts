@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
     }
 
-    console.log("[v0] Generated embedding for document:", documentName)
+    console.log("Generated embedding for document:", documentName)
 
     return NextResponse.json({
       success: true,

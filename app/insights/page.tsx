@@ -19,79 +19,35 @@ interface AIInsight {
   category: string
 }
 
-interface TrendingTopic {
-  topic: string
-  count: number
-  trend: "up" | "down" | "stable"
-}
-
 export default function AIInsightsPage() {
   const [insights, setInsights] = useState<AIInsight[]>([])
-  const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
 
-  // Load initial insights
   useEffect(() => {
-    loadInsights()
-    loadTrendingTopics()
+    loadStoredInsights()
   }, [])
 
-  const loadInsights = async () => {
-    setIsLoading(true)
+  async function loadStoredInsights() {
     try {
-      // Simulate API call - in production, this would fetch real insights
-      const mockInsights: AIInsight[] = [
-        {
-          id: "1",
-          question: "What is our remote work policy?",
-          answer:
-            "Employees can work remotely up to 3 days per week with manager approval. Full remote work requires VP approval and is evaluated quarterly based on performance metrics.",
-          source: "HR Policy Manual v2.3",
-          timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-          confidence: 95,
-          category: "HR",
-        },
-        {
-          id: "2",
-          question: "How do I submit expense reports?",
-          answer:
-            "Use the Concur system accessible through the employee portal. Submit within 30 days with receipts for amounts over $25. Meals are reimbursed up to $50 per day.",
-          source: "Finance Guidelines",
-          timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-          confidence: 98,
-          category: "Finance",
-        },
-        {
-          id: "3",
-          question: "What are the Q4 sales targets?",
-          answer:
-            "Q4 targets are $2.4M total revenue with 15% growth in enterprise accounts and 25% growth in SMB segment. Each rep has individual quotas based on territory.",
-          source: "Q4 Sales Plan.pdf",
-          timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-          confidence: 92,
-          category: "Sales",
-        },
-      ]
-
-      setInsights(mockInsights)
-    } catch (err) {
-      setError("Failed to load AI insights")
-    } finally {
-      setIsLoading(false)
+      const res = await fetch("/api/ai/recent-answers")
+      if (res.ok) {
+        const data = await res.json()
+        const answers = (data.answers ?? []).map((a: any) => ({
+          id: a.id,
+          question: a.question,
+          answer: a.answer,
+          source: a.source ?? "Your documents",
+          timestamp: a.timestamp,
+          confidence: a.confidence ?? 85,
+          category: "Generated",
+        }))
+        setInsights(answers)
+      }
+    } catch {
+      setInsights([])
     }
-  }
-
-  const loadTrendingTopics = () => {
-    const mockTopics: TrendingTopic[] = [
-      { topic: "Remote Work", count: 24, trend: "up" },
-      { topic: "Expense Reports", count: 18, trend: "stable" },
-      { topic: "Sales Targets", count: 15, trend: "up" },
-      { topic: "Benefits", count: 12, trend: "down" },
-      { topic: "Training", count: 8, trend: "up" },
-    ]
-    setTrendingTopics(mockTopics)
   }
 
   const generateNewInsight = async () => {
@@ -101,8 +57,6 @@ export default function AIInsightsPage() {
     setError("")
 
     try {
-      console.log("[v0] Generating AI insight for:", searchQuery)
-
       const response = await fetch("/api/ai/answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -110,7 +64,8 @@ export default function AIInsightsPage() {
       })
 
       if (!response.ok) {
-        throw new Error("Failed to generate insight")
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || "Failed to generate insight")
       }
 
       const data = await response.json()
@@ -118,18 +73,17 @@ export default function AIInsightsPage() {
       const newInsight: AIInsight = {
         id: Date.now().toString(),
         question: searchQuery,
-        answer: data.answer || "I don't have enough information to provide a comprehensive answer to this question.",
-        source: data.sources?.[0] || "AI Generated",
+        answer: data.answer || "I don't have enough information in your documents to answer this question. Try uploading more relevant documents.",
+        source: data.sources?.[0]?.name ?? "Your documents",
         timestamp: new Date().toISOString(),
-        confidence: data.confidence || 75,
+        confidence: data.confidence ?? 75,
         category: "Generated",
       }
 
       setInsights([newInsight, ...insights])
       setSearchQuery("")
     } catch (err) {
-      console.error("[v0] Error generating insight:", err)
-      setError("Failed to generate AI insight. Please try again.")
+      setError(err instanceof Error ? err.message : "Failed to generate AI insight. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -148,13 +102,13 @@ export default function AIInsightsPage() {
   }
 
   const getCategoryColor = (category: string) => {
-    const colors = {
+    const colors: Record<string, string> = {
       HR: "bg-blue-100 text-blue-800",
       Finance: "bg-green-100 text-green-800",
       Sales: "bg-purple-100 text-purple-800",
       Generated: "bg-orange-100 text-orange-800",
     }
-    return colors[category as keyof typeof colors] || "bg-gray-100 text-gray-800"
+    return colors[category] ?? "bg-gray-100 text-gray-800"
   }
 
   return (
@@ -163,25 +117,23 @@ export default function AIInsightsPage() {
 
       <main className="flex-1 p-6 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
-          {/* Header */}
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <Brain className="h-8 w-8 text-accent" />
               <h1 className="text-3xl font-bold text-foreground text-balance">AI Insights</h1>
             </div>
             <p className="text-muted-foreground text-pretty">
-              Discover patterns and get intelligent answers from your knowledge base
+              Ask questions and get answers from your uploaded documents. Upload files first if you have no documents.
             </p>
           </div>
 
-          {/* Generate New Insight */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-accent" />
                 Generate New Insight
               </CardTitle>
-              <CardDescription>Ask a question to generate AI-powered insights from your documents</CardDescription>
+              <CardDescription>Ask a question to get an AI answer based on your documents</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
@@ -206,11 +158,10 @@ export default function AIInsightsPage() {
           </Card>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Recent Insights */}
             <div className="lg:col-span-2 space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-foreground">Recent Insights</h2>
-                <Button variant="outline" size="sm" onClick={loadInsights} disabled={isLoading}>
+                <Button variant="outline" size="sm" onClick={loadStoredInsights} disabled={isLoading}>
                   <RefreshCw className={`h-3 w-3 mr-1 ${isLoading ? "animate-spin" : ""}`} />
                   Refresh
                 </Button>
@@ -254,11 +205,11 @@ export default function AIInsightsPage() {
 
                 {insights.length === 0 && !isLoading && (
                   <Card>
-                    <CardContent className="pt-6 text-center">
+                    <CardContent className="pt-6 text-center py-10">
                       <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="font-medium text-foreground mb-2">No insights yet</h3>
                       <p className="text-sm text-muted-foreground">
-                        Generate your first AI insight by asking a question above
+                        Ask a question above to get an AI answer from your documents. Make sure you have uploaded files first.
                       </p>
                     </CardContent>
                   </Card>
@@ -266,55 +217,29 @@ export default function AIInsightsPage() {
               </div>
             </div>
 
-            {/* Trending Topics */}
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-foreground">Trending Topics</h2>
+              <h2 className="text-xl font-semibold text-foreground">Quick Stats</h2>
 
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <TrendingUp className="h-4 w-4 text-accent" />
-                    Most Asked About
+                    Your insights
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {trendingTopics.map((topic, index) => (
-                    <div key={topic.topic} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">{topic.topic}</span>
-                        {topic.trend === "up" && <TrendingUp className="h-3 w-3 text-green-600" />}
-                        {topic.trend === "down" && <TrendingUp className="h-3 w-3 text-red-600 rotate-180" />}
-                      </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {topic.count}
-                      </Badge>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Quick Stats */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Quick Stats</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Total Insights</span>
+                    <span className="text-sm text-muted-foreground">Total insights</span>
                     <span className="text-sm font-medium">{insights.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Avg Confidence</span>
+                    <span className="text-sm text-muted-foreground">Avg confidence</span>
                     <span className="text-sm font-medium">
                       {insights.length > 0
                         ? Math.round(insights.reduce((acc, i) => acc + i.confidence, 0) / insights.length)
                         : 0}
                       %
                     </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Categories</span>
-                    <span className="text-sm font-medium">{new Set(insights.map((i) => i.category)).size}</span>
                   </div>
                 </CardContent>
               </Card>

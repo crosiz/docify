@@ -50,10 +50,12 @@ export default function SignInPage() {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
+    setError("")
     try {
-      await signIn("google", { callbackUrl })
+      await signIn("google", { callbackUrl, redirect: true })
     } catch (error) {
       setError("Failed to sign in with Google")
+    } finally {
       setIsLoading(false)
     }
   }
@@ -62,12 +64,7 @@ export default function SignInPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Logo and Header */}
-        <div className="text-center space-y-2">
-          <div className="flex justify-center">
-            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-              <Brain className="h-7 w-7 text-primary-foreground" />
-            </div>
-          </div>
+        <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">Welcome back to Docify</h1>
           <p className="text-muted-foreground">Sign in to access your knowledge hub</p>
         </div>
@@ -176,21 +173,7 @@ export default function SignInPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Demo Credentials */}
-        <Card className="bg-muted/50">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Demo Credentials</p>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>Email: demo@Docify.ai</p>
-                <p>Password: password123</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="text-center">
+        <div>
           <Link href="/" className="text-sm text-muted-foreground hover:text-primary">
             ← Back to home
           </Link>

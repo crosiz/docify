@@ -21,7 +21,7 @@ export function EmailSetup() {
   const [connections, setConnections] = useState<EmailConnection[]>([
     {
       id: "conn_1",
-      email: "john.doe@company.com",
+      email: "info@crosiz.com",
       provider: "Gmail",
       status: "connected",
       lastSync: "2 hours ago",

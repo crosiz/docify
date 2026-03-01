@@ -1,24 +1,27 @@
+// lib/auth.ts
 import type { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
+import { PrismaAdapter } from "@next-auth/prisma-adapter"
+import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
-// Mock user database - in production, this would be a real database
-const users = [
-  {
-    id: "1",
-    email: "demo@akop.ai",
-    password: "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj3QJb9.k6FO", // "password123"
-    name: "Demo User",
-    image: null,
-  },
-]
-
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
+  secret: process.env.NEXTAUTH_SECRET,
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/auth/signin",
+    error: "/auth/error",
+  },
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: "https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account&access_type=offline&response_type=code",
+      allowDangerousEmailAccountLinking: true,
     }),
     CredentialsProvider({
       name: "credentials",
@@ -27,50 +30,51 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
+        const { email, password } = credentials ?? {}
+        if (!email || !password) throw new Error("Please provide both email and password")
 
-        const user = users.find((user) => user.email === credentials.email)
+        const user = await prisma.user.findUnique({ where: { email } })
+        if (!user || !user.password) throw new Error("Invalid credentials")
 
-        if (!user) {
-          return null
-        }
+        const isPasswordValid = await bcrypt.compare(password, user.password)
+        if (!isPasswordValid) throw new Error("Invalid credentials")
 
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-        }
+        return user
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/auth/signin",
-    signUp: "/auth/signup",
-  },
   callbacks: {
-    async jwt({ token, user }) {
+    async redirect({ url, baseUrl }) {
+      const callback = url.startsWith("/") ? `${baseUrl}${url}` : url
+      if (callback === baseUrl || callback === `${baseUrl}/`) return `${baseUrl}/dashboard`
+      return callback
+    },
+    async jwt({ token, user, account, profile }) {
       if (user) {
         token.id = user.id
+        token.role = (user as { role?: string }).role
+        token.email = user.email
+        token.name = user.name
+      }
+      if (account) {
+        token.accessToken = account.access_token
       }
       return token
     },
     async session({ session, token }) {
-      if (token) {
-        session.user!.id = token.id as string
+      if (session.user) {
+        session.user.id = token.id as string
+        session.user.role = token.role as string
+        session.user.email = token.email as string
+        session.user.name = token.name as string
       }
+      session.accessToken = token.accessToken as string
       return session
     },
   },
+  events: {},
 }
+
+
+
+

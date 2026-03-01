@@ -1,65 +1,108 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { parseDocument } from "@/lib/parsers"
+import { chunkText } from "@/lib/chunker"
+import { getOpenAIClient, generateEmbedding } from "@/lib/openai"
+import { db } from "@/lib/db"
+import { DocumentStatus } from "@prisma/client"
 
 export async function POST(request: NextRequest) {
   try {
-    const { fileName, fileContent, fileType } = await request.json()
-
-    if (!fileName || !fileContent) {
-      return NextResponse.json({ error: "File name and content are required" }, { status: 400 })
+    const session = await getServerSession(authOptions)
+    const userId = (session?.user as { id?: string } | undefined)?.id
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log("[v0] Processing document:", fileName)
-
-    // Simulate document processing and text extraction
-    let extractedText = ""
-
-    switch (fileType) {
-      case "application/pdf":
-        // In production, use pdf-parse or similar
-        extractedText = `Extracted text from PDF: ${fileName}. This would contain the actual PDF content extracted using a PDF parsing library.`
-        break
-      case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        // In production, use mammoth.js or similar
-        extractedText = `Extracted text from DOCX: ${fileName}. This would contain the actual Word document content extracted using a DOCX parsing library.`
-        break
-      case "text/csv":
-        // In production, parse CSV properly
-        extractedText = `Extracted data from CSV: ${fileName}. This would contain structured data from the CSV file.`
-        break
-      default:
-        extractedText = fileContent
+    const formData = await request.formData()
+    const file = formData.get("file") as File | null
+    if (!file) {
+      return NextResponse.json(
+        { error: "No file provided. Send as multipart/form-data with field 'file'." },
+        { status: 400 }
+      )
     }
 
-    // Generate embeddings for the extracted text
-    const embeddingResponse = await fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/embeddings`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const fileName = file.name
+    const mimeType = file.type || "application/octet-stream"
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const size = buffer.length
+
+    if (size === 0) {
+      return NextResponse.json({ error: "File is empty" }, { status: 400 })
+    }
+
+    const openaiKey = request.headers.get("x-openai-key") || process.env.OPENAI_API_KEY
+    if (!openaiKey) {
+      return NextResponse.json(
+        { error: "OPENAI_API_KEY is not configured. Add it in settings to process documents." },
+        { status: 503 }
+      )
+    }
+
+    const openai = getOpenAIClient(openaiKey)
+
+    const extractedText = await parseDocument(buffer, mimeType, fileName)
+    if (!extractedText || extractedText.trim().length < 20) {
+      return NextResponse.json(
+        { error: "Could not extract enough text from the document (or document is empty)." },
+        { status: 400 }
+      )
+    }
+
+    const chunks = chunkText(extractedText, 500)
+    if (chunks.length === 0) {
+      return NextResponse.json(
+        { error: "Document produced no chunks after splitting." },
+        { status: 400 }
+      )
+    }
+
+    const doc = await db.document.create({
+      data: {
+        filename: `${Date.now()}_${fileName}`,
+        originalName: fileName,
+        mimeType,
+        size,
+        content: extractedText,
+        userId,
+        status: DocumentStatus.PROCESSING,
       },
-      body: JSON.stringify({
-        text: extractedText,
-        documentId: `doc_${Date.now()}`,
-        documentName: fileName,
-      }),
     })
 
-    if (!embeddingResponse.ok) {
-      throw new Error("Failed to generate embeddings")
+    for (const chunk of chunks) {
+      const embedding = await generateEmbedding(chunk.content, openai)
+      await db.embedding.create({
+        data: {
+          documentId: doc.id,
+          content: chunk.content,
+          embedding: embedding as unknown as object,
+          metadata: { chunkIndex: chunk.index },
+        },
+      })
     }
 
-    const embeddingData = await embeddingResponse.json()
-
-    console.log("[v0] Document processed and indexed:", fileName)
+    await db.document.update({
+      where: { id: doc.id },
+      data: { status: DocumentStatus.COMPLETED, processedAt: new Date() },
+    })
 
     return NextResponse.json({
       success: true,
-      documentId: embeddingData.data.id,
+      documentId: doc.id,
       fileName,
-      extractedText: extractedText.substring(0, 200) + "...",
+      chunkCount: chunks.length,
       status: "processed",
     })
   } catch (error) {
-    console.error("[v0] Error processing document:", error)
-    return NextResponse.json({ error: "Failed to process document" }, { status: 500 })
+    console.error("[documents/process] Error:", error)
+    return NextResponse.json(
+      {
+        error: "Failed to process document",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    )
   }
 }

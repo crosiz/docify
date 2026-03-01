@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,8 @@ import { Brain, Mail, Lock, User, AlertCircle, CheckCircle } from "lucide-react"
 
 export default function SignUpPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
 
   const [formData, setFormData] = useState({
     name: "",
@@ -94,10 +96,13 @@ export default function SignUpPage() {
 
   const handleGoogleSignUp = async () => {
     setIsLoading(true)
+    setError("")
     try {
-      await signIn("google", { callbackUrl: "/dashboard" })
+      // Same as sign-in: Google OAuth then redirect straight to dashboard
+      await signIn("google", { callbackUrl, redirect: true })
     } catch (error) {
-      setError("Failed to sign up with Google")
+      setError("Failed to continue with Google")
+    } finally {
       setIsLoading(false)
     }
   }
@@ -126,12 +131,7 @@ export default function SignUpPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Logo and Header */}
-        <div className="text-center space-y-2">
-          <div className="flex justify-center">
-            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-              <Brain className="h-7 w-7 text-primary-foreground" />
-            </div>
-          </div>
+        <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">Join Docify</h1>
           <p className="text-muted-foreground">Create your account to get started</p>
         </div>
@@ -272,7 +272,7 @@ export default function SignUpPage() {
           </CardContent>
         </Card>
 
-        <div className="text-center">
+        <div>
           <Link href="/" className="text-sm text-muted-foreground hover:text-primary">
             ← Back to home
           </Link>

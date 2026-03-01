@@ -1,0 +1,15 @@
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+
+export async function POST() {
+    const cookieStore = cookies();
+
+    // Explicitly destroy all permutations of NextAuth cookies
+    cookieStore.delete("next-auth.session-token");
+    cookieStore.delete("__Secure-next-auth.session-token");
+    cookieStore.delete("next-auth.csrf-token");
+    cookieStore.delete("__Host-next-auth.csrf-token");
+    cookieStore.delete("next-auth.callback-url");
+
+    return NextResponse.json({ success: true, message: "Cookies destroyed" });
+}

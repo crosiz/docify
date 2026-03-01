@@ -28,7 +28,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { apiKey } = await request.json()
+    const providedKey = await request.json()
+    const apiKey = providedKey.apiKey?.trim()
 
     if (!apiKey) {
       return NextResponse.json({ error: "No API key provided" }, { status: 400 })

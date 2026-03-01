@@ -5,7 +5,6 @@ import { useDropzone } from "react-dropzone"
 import { Upload, FileText, AlertCircle, CheckCircle, X } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
@@ -22,6 +21,7 @@ const ACCEPTED_FILE_TYPES = {
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
   "application/msword": [".doc"],
   "text/csv": [".csv"],
+  "text/plain": [".txt"],
 }
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
@@ -29,93 +29,70 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 export function UploadZone() {
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([])
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
-    // Handle rejected files
-    if (rejectedFiles.length > 0) {
-      console.log("[v0] Rejected files:", rejectedFiles)
-    }
-
-    // Process accepted files
-    const newFiles: UploadFile[] = acceptedFiles.map((file) => ({
-      file,
-      id: Math.random().toString(36).substr(2, 9),
-      status: "uploading",
-      progress: 0,
-    }))
-
-    setUploadFiles((prev) => [...prev, ...newFiles])
-
-    // Process each file
-    newFiles.forEach((uploadFile) => {
-      processFile(uploadFile.id)
-    })
-  }, [])
-
-  const processFile = async (fileId: string) => {
-    const uploadFile = uploadFiles.find((f) => f.id === fileId)
-    if (!uploadFile) return
-
+  const processFile = useCallback(async (fileId: string, file: File) => {
+    setUploadFiles((prev) =>
+      prev.map((f) => (f.id === fileId ? { ...f, status: "processing" as const } : f))
+    )
     try {
-      // Simulate upload progress
-      const uploadInterval = setInterval(() => {
-        setUploadFiles((prev) =>
-          prev.map((file) => {
-            if (file.id === fileId && file.status === "uploading") {
-              const newProgress = Math.min(file.progress + Math.random() * 30, 100)
-              if (newProgress >= 100) {
-                clearInterval(uploadInterval)
-                return { ...file, progress: 100, status: "processing" }
-              }
-              return { ...file, progress: newProgress }
-            }
-            return file
-          }),
-        )
-      }, 300)
+      const formData = new FormData()
+      formData.append("file", file)
 
-      // Wait for upload to complete
-      await new Promise((resolve) => {
-        const checkComplete = () => {
-          const file = uploadFiles.find((f) => f.id === fileId)
-          if (file?.status === "processing") {
-            resolve(true)
-          } else {
-            setTimeout(checkComplete, 100)
+      let apiKey = ""
+      try {
+        const stored = localStorage.getItem("akop-settings")
+        if (stored) {
+          const parsedSettings = JSON.parse(stored)
+          if (parsedSettings.openaiApiKey) {
+            apiKey = parsedSettings.openaiApiKey
           }
         }
-        checkComplete()
-      })
+      } catch (e) { }
 
-      // Process the document
-      console.log("[v0] Processing file:", uploadFile.file.name)
+      const headers: Record<string, string> = {}
+      if (apiKey) {
+        headers["x-openai-key"] = apiKey
+      }
 
       const response = await fetch("/api/documents/process", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fileName: uploadFile.file.name,
-          fileContent: "Sample file content", // In production, read actual file content
-          fileType: uploadFile.file.type,
-        }),
+        headers,
+        body: formData,
       })
 
+      const data = await response.json().catch(() => ({}))
       if (!response.ok) {
-        throw new Error("Processing failed")
+        throw new Error(data.error || "Processing failed")
       }
 
-      const result = await response.json()
-      console.log("[v0] File processed successfully:", result)
-
-      setUploadFiles((prev) => prev.map((file) => (file.id === fileId ? { ...file, status: "success" } : file)))
-    } catch (error) {
-      console.error("[v0] Error processing file:", error)
       setUploadFiles((prev) =>
-        prev.map((file) => (file.id === fileId ? { ...file, status: "error", error: "Processing failed" } : file)),
+        prev.map((f) => (f.id === fileId ? { ...f, status: "success" as const } : f))
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Processing failed"
+      setUploadFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId ? { ...f, status: "error" as const, error: message } : f
+        )
       )
     }
-  }
+  }, [])
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[], rejectedFiles: any[]) => {
+      if (rejectedFiles.length > 0) {
+        console.log("Rejected files:", rejectedFiles)
+      }
+      const newFiles: UploadFile[] = acceptedFiles.map((file) => ({
+        file,
+        id: Math.random().toString(36).substr(2, 9),
+        status: "processing" as const,
+        progress: 0,
+      }))
+      setUploadFiles((prev) => [...prev, ...newFiles])
+      newFiles.forEach((uploadFile) => processFile(uploadFile.id, uploadFile.file))
+    },
+    [processFile]
+  )
 
   const removeFile = (fileId: string) => {
     setUploadFiles((prev) => prev.filter((file) => file.id !== fileId))
@@ -211,13 +188,6 @@ export function UploadZone() {
                         </Button>
                       </div>
                     </div>
-
-                    {uploadFile.status === "uploading" && (
-                      <div className="space-y-1">
-                        <Progress value={uploadFile.progress} className="h-2" />
-                        <p className="text-xs text-muted-foreground">{Math.round(uploadFile.progress)}% uploaded</p>
-                      </div>
-                    )}
 
                     {uploadFile.status === "processing" && (
                       <p className="text-xs text-accent">Processing and generating embeddings...</p>

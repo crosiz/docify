@@ -14,6 +14,8 @@ interface SearchResult {
   id: string
   documentName: string
   text: string
+  type: "document" | "email"
+  sender?: string
   similarity: number
   relevanceScore: number
 }
@@ -43,14 +45,28 @@ export function SearchBar() {
     setAiResponse(null)
 
     try {
-      console.log("[v0] Initiating search for:", query)
+      console.log("Initiating search for:", query)
+
+      let apiKey = ""
+      try {
+        const stored = localStorage.getItem("akop-settings")
+        if (stored) {
+          const parsedSettings = JSON.parse(stored)
+          if (parsedSettings.openaiApiKey) {
+            apiKey = parsedSettings.openaiApiKey
+          }
+        }
+      } catch (e) { }
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" }
+      if (apiKey) {
+        headers["x-openai-key"] = apiKey
+      }
 
       // Search for documents
       const searchResponse = await fetch("/api/search", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({ query, limit: 5 }),
       })
 
@@ -59,17 +75,15 @@ export function SearchBar() {
       }
 
       const searchData = await searchResponse.json()
-      console.log("[v0] Search completed, found", searchData.results.length, "results")
+      console.log("Search completed, found", searchData.results.length, "results")
       setSearchResults(searchData.results)
       setIsSearching(false)
 
       // Generate AI answer
-      console.log("[v0] Generating AI answer...")
+      console.log("Generating AI answer...")
       const aiResponse = await fetch("/api/ai/answer", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({ query }),
       })
 
@@ -78,10 +92,10 @@ export function SearchBar() {
       }
 
       const aiData = await aiResponse.json()
-      console.log("[v0] AI answer generated successfully")
+      console.log("AI answer generated successfully")
       setAiResponse(aiData)
     } catch (error) {
-      console.error("[v0] Search/AI error:", error)
+      console.error("Search/AI error:", error)
       setSearchResults([])
       setAiResponse(null)
     } finally {

@@ -26,50 +26,25 @@ export function InstantAnswers() {
 
   const loadRecentAnswers = async () => {
     try {
-      // Try to load from localStorage first (for persistence)
       const stored = localStorage.getItem("akop-recent-answers")
       if (stored) {
-        const parsedAnswers = JSON.parse(stored)
-        setRecentAnswers(parsedAnswers.slice(0, 3)) // Show only latest 3
+        const parsed = JSON.parse(stored)
+        setRecentAnswers(Array.isArray(parsed) ? parsed.slice(0, 3) : [])
         return
       }
-
-      // Fallback to mock data if no stored answers
-      const mockAnswers: RecentAnswer[] = [
-        {
-          id: "1",
-          question: "What is our remote work policy?",
-          answer:
-            "Employees can work remotely up to 3 days per week with manager approval. Full remote work requires VP approval and is evaluated quarterly based on performance metrics.",
-          source: "HR Policy Manual v2.3",
-          timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-          confidence: 95,
-        },
-        {
-          id: "2",
-          question: "How do I submit expense reports?",
-          answer:
-            "Use the Concur system accessible through the employee portal. Submit within 30 days with receipts for amounts over $25. Meals are reimbursed up to $50 per day.",
-          source: "Finance Guidelines",
-          timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-          confidence: 98,
-        },
-        {
-          id: "3",
-          question: "What are the Q4 sales targets?",
-          answer:
-            "Q4 targets are $2.4M total revenue with 15% growth in enterprise accounts and 25% growth in SMB segment. Each rep has individual quotas based on territory.",
-          source: "Q4 Sales Plan.pdf",
-          timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-          confidence: 92,
-        },
-      ]
-
-      setRecentAnswers(mockAnswers)
-      // Store in localStorage for persistence
-      localStorage.setItem("akop-recent-answers", JSON.stringify(mockAnswers))
+      const response = await fetch("/api/ai/recent-answers")
+      if (response.ok) {
+        const data = await response.json()
+        const answers = data.answers ?? []
+        setRecentAnswers(answers.slice(0, 3))
+        if (answers.length > 0)
+          localStorage.setItem("akop-recent-answers", JSON.stringify(answers))
+      } else {
+        setRecentAnswers([])
+      }
     } catch (error) {
       console.error("[v0] Error loading recent answers:", error)
+      setRecentAnswers([])
     }
   }
 
@@ -84,12 +59,10 @@ export function InstantAnswers() {
         setRecentAnswers(data.answers || [])
         localStorage.setItem("akop-recent-answers", JSON.stringify(data.answers || []))
       } else {
-        // Fallback to reloading existing answers
         await loadRecentAnswers()
       }
     } catch (error) {
       console.error("[v0] Error refreshing answers:", error)
-      // Fallback to reloading existing answers
       await loadRecentAnswers()
     } finally {
       setTimeout(() => {
@@ -151,7 +124,7 @@ export function InstantAnswers() {
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground text-pretty leading-relaxed">{item.answer}</p>
+              <p className="text-sm text-muted-foreground break-words text-pretty leading-relaxed line-clamp-3">{item.answer}</p>
 
               <div className="flex items-center justify-between">
                 <Badge variant="outline" className="text-xs border-border">
@@ -172,7 +145,7 @@ export function InstantAnswers() {
         )}
 
         <div className="pt-4 border-t border-border">
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-[10px] text-muted-foreground text-center">
             AI answers are generated from your uploaded documents and may not always be accurate.
           </p>
         </div>

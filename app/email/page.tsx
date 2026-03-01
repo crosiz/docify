@@ -5,10 +5,8 @@ import { Sidebar } from "@/components/sidebar"
 
 export default function EmailPage() {
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-
-      <main className="flex-1 p-6 lg:p-8">
+    <div className="flex-1 w-full max-w-full overflow-y-auto">
+      <main className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Header */}
           <div className="space-y-2">

@@ -1,4 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { searchDocuments } from "@/lib/search"
+import { db } from "@/lib/db"
 
 const fallbackResponses: Record<string, string> = {
   "remote work":
@@ -45,32 +49,22 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Generating AI answer for:", query)
 
-    // First, search for relevant documents
-    const searchResponse = await fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/search`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ query, limit: 3 }),
-    })
-
-    if (!searchResponse.ok) {
-      console.error("[v0] Search failed for AI answer")
-      throw new Error("Search failed")
-    }
-
-    const searchData = await searchResponse.json()
-    const relevantDocs = searchData.results
+    const session = await getServerSession(authOptions)
+    const userId = (session?.user as { id?: string } | undefined)?.id ?? null
+    const apiKey = request.headers.get("x-openai-key")
+    const relevantDocs = await searchDocuments(userId, query, 5, apiKey)
 
     let aiAnswer: string
     let confidence: number
 
     try {
+      const apiKey = request.headers.get("x-openai-key") || process.env.OPENAI_API_KEY
+
       // Only try OpenAI if API key is available
-      if (process.env.OPENAI_API_KEY) {
+      if (apiKey) {
         const OpenAI = (await import("openai")).default
         const openai = new OpenAI({
-          apiKey: process.env.OPENAI_API_KEY,
+          apiKey: apiKey,
         })
 
         // Prepare context from relevant documents
@@ -119,7 +113,20 @@ Please provide a concise answer based on the available information.`,
       confidence = relevantDocs.length > 0 ? Math.max(...relevantDocs.map((d: any) => d.relevanceScore)) : 30
     }
 
-    console.log("[v0] AI answer generated successfully")
+    if (userId) {
+      try {
+        await db.search.create({
+          data: {
+            userId,
+            query,
+            results: relevantDocs as unknown as object,
+            answer: aiAnswer,
+          },
+        })
+      } catch (e) {
+        console.warn("[v0] Could not save search to history:", e)
+      }
+    }
 
     return NextResponse.json({
       success: true,

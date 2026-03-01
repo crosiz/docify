@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { Sidebar } from "@/components/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -34,6 +35,7 @@ interface SettingsData {
 }
 
 export default function SettingsPage() {
+  const { data: session } = useSession()
   const { toast } = useToast()
   const [settings, setSettings] = useState<SettingsData>({
     maxFileSize: 50,
@@ -46,6 +48,7 @@ export default function SettingsPage() {
 
   const [showApiKey, setShowApiKey] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [tempApiKey, setTempApiKey] = useState("")
   const [apiKeyStatus, setApiKeyStatus] = useState<"unknown" | "valid" | "invalid">("unknown")
 
   // Load settings on component mount
@@ -68,7 +71,30 @@ export default function SettingsPage() {
 
   const checkApiKeyStatus = async () => {
     try {
-      const response = await fetch("/api/ai/test-key")
+      let apiKey = ""
+      const stored = localStorage.getItem("akop-settings")
+      if (stored) {
+        const parsedSettings = JSON.parse(stored)
+        if (parsedSettings.openaiApiKey) {
+          apiKey = parsedSettings.openaiApiKey
+        }
+      }
+
+      if (!apiKey) {
+        const response = await fetch("/api/ai/test-key")
+        if (response.ok) {
+          setApiKeyStatus("valid")
+        } else {
+          setApiKeyStatus("invalid")
+        }
+        return
+      }
+
+      const response = await fetch("/api/ai/test-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey }),
+      })
       if (response.ok) {
         setApiKeyStatus("valid")
       } else {
@@ -126,6 +152,23 @@ export default function SettingsPage() {
     }
   }
 
+  const handleSaveApiKey = async () => {
+    const key = tempApiKey.trim()
+    if (!key) return
+    setIsLoading(true)
+    const updatedSettings = { ...settings, openaiApiKey: key }
+    setSettings(updatedSettings)
+    localStorage.setItem("akop-settings", JSON.stringify(updatedSettings))
+    setTempApiKey("")
+
+    await testApiKey(key)
+    setIsLoading(false)
+    toast({
+      title: "API Key Saved",
+      description: "Your OpenAI key has been saved to your browser.",
+    })
+  }
+
   const handleClearCache = () => {
     // Clear localStorage cache
     localStorage.removeItem("akop-recent-answers")
@@ -179,10 +222,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-
-      <main className="flex-1 p-6 lg:p-8">
+    <div className="flex-1 w-full max-w-full overflow-y-auto">
+      <main className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Header */}
           <div className="space-y-2">
@@ -217,27 +258,62 @@ export default function SettingsPage() {
 
                 <div className="grid gap-2">
                   <Label htmlFor="openai-key">OpenAI API Key</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
+
+                  {settings.openaiApiKey ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="relative flex-1 max-w-[400px]">
+                        <Input
+                          disabled
+                          value={showApiKey ? settings.openaiApiKey : "sk-••••••••••••••••••••••••••••••••••••••••"}
+                          className="pr-10 bg-muted/20"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowApiKey(!showApiKey)}
+                        >
+                          {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setSettings({ ...settings, openaiApiKey: "" })
+                          localStorage.setItem("akop-settings", JSON.stringify({ ...settings, openaiApiKey: "" }))
+                          setApiKeyStatus("unknown")
+                        }}
+                        className="text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Remove
+                      </Button>
+                      {getApiKeyStatusBadge()}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mt-1">
                       <Input
                         id="openai-key"
-                        type={showApiKey ? "text" : "password"}
                         placeholder="sk-..."
-                        value={settings.openaiApiKey}
-                        onChange={(e) => setSettings({ ...settings, openaiApiKey: e.target.value })}
+                        className="flex-1 max-w-[400px]"
+                        value={tempApiKey}
+                        onChange={(e) => setTempApiKey(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveApiKey()
+                        }}
                       />
                       <Button
                         type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowApiKey(!showApiKey)}
+                        onClick={handleSaveApiKey}
+                        disabled={!tempApiKey.trim() || isLoading}
                       >
-                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        Add Key
                       </Button>
                     </div>
-                    {getApiKeyStatusBadge()}
-                  </div>
+                  )}
+
                 </div>
 
                 <div className="text-sm text-muted-foreground space-y-1">
@@ -321,7 +397,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="p-3 bg-muted rounded-lg">
                   <div className="text-sm font-medium">Connected Email</div>
-                  <div className="text-sm text-muted-foreground">rafaykhan2k22@gmail.com</div>
+                  <div className="text-sm text-muted-foreground">{session?.user?.email || "No email connected"}</div>
                   <Badge variant="outline" className="mt-1">
                     Gmail
                   </Badge>

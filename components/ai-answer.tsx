@@ -5,6 +5,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Brain, ThumbsUp, ThumbsDown, Copy, Loader2 } from "lucide-react"
 import { useState } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { TypingEffect } from "@/components/typing-effect"
 
 interface AIAnswerProps {
   query: string
@@ -67,8 +70,8 @@ export function AIAnswer({ query, answer, sources, confidence, isLoading }: AIAn
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="bg-background/50 rounded-lg p-4 border border-accent/10">
-          <p className="text-card-foreground leading-relaxed text-pretty">{answer}</p>
+        <div className="bg-background/50 rounded-lg p-4 border border-accent/10 prose prose-slate dark:prose-invert max-w-full break-words overflow-x-auto overflow-y-auto max-h-[400px] scrollbar-thin scrollbar-thumb-accent/20 scrollbar-track-transparent prose-sm sm:prose-base text-card-foreground">
+          <TypingEffect content={answer} speed={10} />
         </div>
 
         {sources.length > 0 && (

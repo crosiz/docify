@@ -3,56 +3,111 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Search, Brain, Mail, FileText, Users, Shield, ArrowRight, Star, CheckCircle } from "lucide-react"
 import Link from "next/link"
+import { LandingNav } from "@/components/landing-nav"
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Brain className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">Docify</span>
+    <div className="min-h-screen bg-background overflow-hidden">
+      {/* Top Banner */}
+      <div className="bg-gradient-to-r from-primary/5 via-accent/10 to-primary/5 border-b border-border/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-center items-center">
+          <a
+            href="https://crosiz.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-2 py-1 px-3 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-300"
+          >
+            <span className="text-[11px] font-medium tracking-wide text-muted-foreground/80 group-hover:text-foreground transition-colors">
+              Developed by
+            </span>
+            <div className="flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+              <img
+                src="/logo.png"
+                alt="Crosiz Logo"
+                className="h-[14px] w-auto object-contain"
+              />
+              <span className="text-[12px] font-bold tracking-tight text-foreground">
+                Crosiz
+              </span>
             </div>
-            <div className="flex items-center gap-4">
-              <Link href="/auth/signin">
-                <Button variant="outline">Sign In</Button>
-              </Link>
-              <Link href="/auth/signup">
-                <Button>Get Started</Button>
-              </Link>
-            </div>
-          </div>
+          </a>
         </div>
-      </nav>
+      </div>
+
+      {/* Navigation */}
+      <LandingNav />
 
       {/* Hero Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <Badge variant="secondary" className="mb-4">
-            AI-Powered Knowledge Management
-          </Badge>
-          <h1 className="text-4xl sm:text-6xl font-bold text-foreground mb-6 text-balance">
-            Find Answers from Your
-            <span className="text-primary"> Internal Knowledge</span>
-          </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto text-pretty">
-            Docify transforms your documents and emails into an intelligent knowledge base. Get instant AI-powered answers
-            from your team's collective knowledge.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/signup">
-              <Button size="lg" className="text-lg px-8">
-                Start Free Trial
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Button variant="outline" size="lg" className="text-lg px-8 bg-transparent">
-              Watch Demo
-            </Button>
+      <section className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Background glow effects */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 blur-[120px] rounded-full point-events-none" />
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-accent/10 blur-[100px] rounded-full point-events-none" />
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-left space-y-6">
+              <Badge variant="secondary" className="mb-4 bg-secondary/10 text-secondary hover:bg-secondary/20 border-none px-4 py-1.5 text-sm transition-colors cursor-default">
+                ✨ AI-Powered Knowledge Management
+              </Badge>
+              <h1 className="text-5xl sm:text-7xl font-extrabold text-foreground tracking-tight text-balance leading-[1.1]">
+                Find Answers from Your <br />
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent drop-shadow-sm">Internal Knowledge</span>
+              </h1>
+              <p className="text-xl text-muted-foreground max-w-2xl text-pretty leading-relaxed">
+                Docify transforms your documents and emails into an intelligent active database. Get instant AI-powered answers
+                from your team's collective knowledge with military-grade security.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <Link href="/auth/signup">
+                  <Button size="lg" className="text-lg px-8 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-1">
+                    Start Free Trial
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Button variant="outline" size="lg" className="text-lg px-8 border-primary/20 hover:bg-primary/5 transition-all hover:border-primary/50">
+                  Watch Demo
+                </Button>
+              </div>
+            </div>
+
+            {/* 3D Graphic Area */}
+            <div className="relative mx-auto w-full max-w-lg lg:max-w-none pt-10 lg:pt-0">
+              <div className="relative" style={{ perspective: "2000px" }}>
+                <div className="relative w-full aspect-square md:aspect-video lg:aspect-square flex items-center justify-center transition-all duration-700 hover:rotate-y-[5deg] hover:rotate-x-[5deg] group cursor-pointer" style={{ transformStyle: "preserve-3d", transform: "rotateY(-15deg) rotateX(10deg)" }}>
+
+                  {/* Shadow Layer */}
+                  <div className="absolute -inset-4 bg-primary/20 rounded-[2rem] blur-2xl group-hover:bg-primary/30 transition-colors duration-700" style={{ transform: "translateZ(-50px)" }} />
+
+                  {/* Main floating card */}
+                  <div className="relative flex flex-col items-center justify-center p-8 bg-card/60 backdrop-blur-2xl border border-white/10 dark:border-white/5 rounded-3xl shadow-2xl h-[300px] w-full max-w-[400px]" style={{ transform: "translateZ(50px)" }}>
+
+                    <div className="absolute -inset-[1px] bg-gradient-to-br from-primary/50 via-transparent to-accent/50 rounded-3xl z-[-1]" />
+
+                    <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 shadow-inner ring-1 ring-white/20">
+                      <Brain className="w-10 h-10 text-primary drop-shadow-md" />
+                    </div>
+
+                    <h3 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Docify AI Engine</h3>
+                    <p className="text-muted-foreground text-center mt-3 font-medium">Vectorizing enterprise data via semantic analysis</p>
+
+                    <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-accent/20 blur-xl rounded-full animate-pulse" style={{ transform: "translateZ(100px)" }} />
+                  </div>
+
+                  {/* Floating decorative sub-cards */}
+                  <div className="absolute top-10 -right-8 bg-background/90 backdrop-blur-xl border border-border/50 p-4 rounded-xl shadow-xl group-hover:translate-y-[-10px] transition-transform duration-500 delay-100 flex items-center gap-3" style={{ transform: "translateZ(80px)" }}>
+                    <FileText className="w-5 h-5 text-accent" />
+                    <span className="text-sm font-semibold text-foreground">1,402 Docs Indexed</span>
+                  </div>
+
+                  <div className="absolute bottom-10 -left-8 bg-background/90 backdrop-blur-xl border border-border/50 p-4 rounded-xl shadow-xl group-hover:translate-y-[-10px] transition-transform duration-500 delay-200 flex items-center gap-3" style={{ transform: "translateZ(120px)" }}>
+                    <Shield className="w-5 h-5 text-green-500" />
+                    <span className="text-sm font-semibold text-foreground">SOC 2 Verified</span>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -70,9 +125,9 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 transform-gpu cursor-default border-primary/10 hover:border-primary/30 bg-card">
               <CardHeader>
-                <Search className="h-12 w-12 text-accent mb-4" />
+                <Search className="h-12 w-12 text-accent mb-4 group-hover:scale-110 transition-transform duration-300" />
                 <CardTitle>Intelligent Document Search</CardTitle>
                 <CardDescription>
                   Search through PDFs, Word docs, and spreadsheets using natural language queries
@@ -96,9 +151,9 @@ export default function LandingPage() {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 transform-gpu cursor-default border-primary/10 hover:border-primary/30 bg-card">
               <CardHeader>
-                <Brain className="h-12 w-12 text-accent mb-4" />
+                <Brain className="h-12 w-12 text-accent mb-4 group-hover:scale-110 transition-transform duration-300" />
                 <CardTitle>AI-Powered Insights</CardTitle>
                 <CardDescription>Get instant answers and summaries generated from your knowledge base</CardDescription>
               </CardHeader>
@@ -120,9 +175,9 @@ export default function LandingPage() {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="group hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 transform-gpu cursor-default border-primary/10 hover:border-primary/30 bg-card">
               <CardHeader>
-                <Mail className="h-12 w-12 text-accent mb-4" />
+                <Mail className="h-12 w-12 text-accent mb-4 group-hover:scale-110 transition-transform duration-300" />
                 <CardTitle>Email Integration</CardTitle>
                 <CardDescription>Connect your email inbox to search through important conversations</CardDescription>
               </CardHeader>
@@ -200,18 +255,9 @@ export default function LandingPage() {
                 ))}
               </div>
               <p className="text-muted-foreground mb-4">
-                "AKOP has transformed how our team accesses institutional knowledge. What used to take hours of
-                searching now takes seconds."
+                "Docify has completely transformed how our team retrieves internal policies. What used to take hours of
+                searching through old PDFs now takes seconds."
               </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-primary-foreground font-semibold">SJ</span>
-                </div>
-                <div>
-                  <div className="font-semibold">Sarah Johnson</div>
-                  <div className="text-sm text-muted-foreground">Knowledge Manager, TechCorp</div>
-                </div>
-              </div>
             </Card>
 
             <Card className="p-6">
@@ -221,18 +267,8 @@ export default function LandingPage() {
                 ))}
               </div>
               <p className="text-muted-foreground mb-4">
-                "The AI insights feature is incredible. It's like having a research assistant that knows everything
-                about our company."
+                "The semantic search feature is incredible. It flawlessly understands the context of our local Urdu-English mixed queries across technical documentation."
               </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-primary-foreground font-semibold">MC</span>
-                </div>
-                <div>
-                  <div className="font-semibold">Michael Chen</div>
-                  <div className="text-sm text-muted-foreground">Head of Operations, StartupXYZ</div>
-                </div>
-              </div>
             </Card>
 
             <Card className="p-6">
@@ -242,18 +278,8 @@ export default function LandingPage() {
                 ))}
               </div>
               <p className="text-muted-foreground mb-4">
-                "Email integration was a game-changer. Now we can find important decisions buried in old email threads
-                instantly."
+                "Email integration was a game-changer for our agency. Now we can instantly find important decisions buried in client email threads."
               </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-primary-foreground font-semibold">ER</span>
-                </div>
-                <div>
-                  <div className="font-semibold">Emily Rodriguez</div>
-                  <div className="text-sm text-muted-foreground">Project Manager, ConsultingFirm</div>
-                </div>
-              </div>
             </Card>
           </div>
         </div>
@@ -273,13 +299,15 @@ export default function LandingPage() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-lg px-8 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary bg-transparent"
-            >
-              Schedule Demo
-            </Button>
+            <a href="https://crosiz.com/inquiry" target="_blank" rel="noopener noreferrer">
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary bg-transparent w-full sm:w-auto"
+              >
+                Schedule Demo
+              </Button>
+            </a>
           </div>
         </div>
       </section>
@@ -290,9 +318,6 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <Brain className="h-5 w-5 text-primary-foreground" />
-                </div>
                 <span className="text-xl font-bold text-foreground">AKOP</span>
               </div>
               <p className="text-muted-foreground">AI-powered knowledge management for modern teams</p>
@@ -362,8 +387,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 AKOP. All rights reserved.</p>
+          <div className="border-t border-border mt-8 pt-6 pb-6 flex flex-col items-center justify-center text-center">
+            <p className="text-muted-foreground text-sm mb-4">&copy; 2024 Docify AI. All rights reserved.</p>
           </div>
         </div>
       </footer>
